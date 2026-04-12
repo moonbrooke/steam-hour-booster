@@ -86,6 +86,25 @@ cp .env.template .env
 | `STEAM_DATA_DIRECTORY` | Path to the directory where Steam will store it's data | `./steam-data` |
 | `TOKEN_STORAGE_DIRECTORY` | Path to the directory where Steam refresh tokens will be stored, used for remembering sessions | `./tokens` |
 
+| `MONITOR_PORT` | Port for the monitor API endpoint | `3000` |
+
+## Monitor API
+
+This project includes an optional monitor HTTP API to expose real-time bot information, such as:
+
+- Current status (`Idle`, `Playing`, or `Blocked`)
+- Uptime since last session started
+- Configured games (name and app ID)
+
+This can be used by dashboards, external services, or health checks.
+
+Once the app is running, open:
+```
+http://localhost:3000/
+```
+
+To configure a custom port, use the `MONITOR_PORT` environment variable.
+
 ## Docker
 
 For Docker usage, see [here](https://hub.docker.com/r/drwarpman/steam-hour-booster).
