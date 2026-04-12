@@ -19,6 +19,7 @@ export class Bot {
 	#pauseErrors = false;
 	#blocked = false;
     #startTime: Date | null = null;
+    #uptimeInterval: ReturnType<typeof setInterval> | null = null;
 
 	constructor(
 		username: string,
@@ -163,6 +164,12 @@ export class Bot {
 	async logout(): Promise<void> {
 		this.#log("Logging out...");
 
+		// Clean up uptime interval on logout
+		if (this.#uptimeInterval) {
+			clearInterval(this.#uptimeInterval);
+			this.#uptimeInterval = null;
+		}
+
 		const { promise, resolve } = Promise.withResolvers();
 
 		this.#steam.once("disconnected", () => resolve());
@@ -193,15 +200,25 @@ export class Bot {
 		};
 	}
 
-	async #play() {
+    async #play() {
 		if (this.#blocked) {
 			this.#steam.gamesPlayed([]);
-			this.#log("Stopped playing.");
-            this.#startTime = null;
-            return;
+            
+			// Get uptime before setting startTime to null
+			const finalUptime = this.#getUptime(); 
+			this.#log(`Stopped playing. Final Uptime: ${finalUptime}`);
+			
+			this.#startTime = null;
+			
+			// Clear interval when stopped
+			if (this.#uptimeInterval) {
+				clearInterval(this.#uptimeInterval);
+				this.#uptimeInterval = null;
+			}
+			return;
 		}
 
-        this.#steam.gamesPlayed(this.#games);
+		this.#steam.gamesPlayed(this.#games);
 		this.#startTime = new Date();
 	
 		const configuredGames = await this.#getConfiguredGames();
@@ -210,6 +227,14 @@ export class Bot {
 		this.#log(`Playing ${this.#games.length} games.`);
 		this.#log(`Games: ${gameNames}`);
 		this.#log(`Started at: ${this.#startTime.toLocaleString()}`);
+
+		// Clear any existing interval (just in case)
+		if (this.#uptimeInterval) clearInterval(this.#uptimeInterval);
+		
+		// Log uptime to terminal every 30 min (1800000 ms)
+		this.#uptimeInterval = setInterval(() => {
+			this.#log(`Current Uptime: ${this.#getUptime()}`);
+		}, 60 * 30 * 1000);
 	}
 
 	async #getConfiguredGames(): Promise<GameInfo[]> {
