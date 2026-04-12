@@ -29,3 +29,15 @@ for (const entry of config) {
 }
 
 await startMonitorApi(bots);
+
+// Shutdown
+process.on("SIGINT", async () => {
+    console.info("\nShutting down...");
+    
+    for (const bot of bots) {
+        await bot.logout();
+    }
+    
+    console.info("All bots logged out. Exiting.");
+    process.exit(0);
+});

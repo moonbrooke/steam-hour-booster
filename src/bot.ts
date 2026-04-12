@@ -161,13 +161,19 @@ export class Bot {
 		}
 	}
 
-	async logout(): Promise<void> {
+    async logout(): Promise<void> {
 		this.#log("Logging out...");
 
 		// Clean up uptime interval on logout
 		if (this.#uptimeInterval) {
 			clearInterval(this.#uptimeInterval);
 			this.#uptimeInterval = null;
+		}
+
+		// Log final uptime before shutting down
+		if (this.#startTime) {
+			this.#log(`Stopped playing. Final Uptime: ${this.#getUptime()}`);
+			this.#startTime = null;
 		}
 
 		const { promise, resolve } = Promise.withResolvers();
