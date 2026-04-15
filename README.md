@@ -1,4 +1,13 @@
 # steam-hour-booster
+
+This is a fork with few modifications.
+
+![GIF Demo](./assets/gif-demo.gif)
+
+> Added red block to censor my username.
+
+## Original README
+
 > Farm your in-game hours on Steam
 - You can farm hours for **multiple games** on **multiple accounts** at once.
 - Accounts with **Steam Guard** enabled are **supported**.
