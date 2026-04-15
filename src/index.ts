@@ -38,6 +38,6 @@ process.on("SIGINT", async () => {
         await bot.logout();
     }
     
-    console.info("All bots logged out. Exiting.");
+    console.info("Logged out successfully. Exiting.");
     process.exit(0);
 });

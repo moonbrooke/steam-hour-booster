@@ -234,13 +234,15 @@ export class Bot {
 		this.#log(`Games: ${gameNames}`);
 		this.#log(`Started at: ${this.#startTime.toLocaleString()}`);
 
+        console.log();
+
 		// Clear any existing interval (just in case)
 		if (this.#uptimeInterval) clearInterval(this.#uptimeInterval);
 		
-		// Log uptime to terminal every 30 min (1800000 ms)
-		this.#uptimeInterval = setInterval(() => {
-			this.#log(`Current Uptime: ${this.#getUptime()}`);
-		}, 60 * 30 * 1000);
+        // Log uptime every second
+        this.#uptimeInterval = setInterval(() => {
+            process.stdout.write(`\r\x1b[K[${this.#username}] Current Uptime: ${this.#getUptime()}`);
+        }, 1000);
 	}
 
 	async #getConfiguredGames(): Promise<GameInfo[]> {
