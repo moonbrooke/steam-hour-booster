@@ -4,7 +4,7 @@ This is a fork with few modifications.
 
 ![GIF Demo](./assets/gif-demo.gif)
 
-> Added red block to censor my username.
+<sub>* Added red block to censor my username.</sub>
 
 ## Original README
 
