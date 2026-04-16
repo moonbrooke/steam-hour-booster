@@ -94,8 +94,8 @@ cp .env.template .env
 | `CONFIG_PATH` | Path to the config file | `./config.json` |
 | `STEAM_DATA_DIRECTORY` | Path to the directory where Steam will store it's data | `./steam-data` |
 | `TOKEN_STORAGE_DIRECTORY` | Path to the directory where Steam refresh tokens will be stored, used for remembering sessions | `./tokens` |
+| `MONITOR_PORT`          | Port for the monitor API endpoint | `5000` |
 
-| `MONITOR_PORT` | Port for the monitor API endpoint | `3000` |
 
 ## Monitor API
 
@@ -109,7 +109,7 @@ This can be used by dashboards, external services, or health checks.
 
 Once the app is running, open:
 ```
-http://localhost:3000/
+http://localhost:5000/
 ```
 
 To configure a custom port, use the `MONITOR_PORT` environment variable.
