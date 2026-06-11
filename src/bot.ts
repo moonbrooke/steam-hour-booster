@@ -63,6 +63,7 @@ export class Bot {
 	}
 
 	#log(msg: string): void {
+        process.stdout.write('\r\x1b[K');
 		console.info(`[${this.#username}] ${msg}`);
 	}
 
@@ -71,19 +72,21 @@ export class Bot {
 			this.#log("Logged in.");
 		});
 
-		this.#steam.on("disconnected", (eresult, msg) => {
-			console.log("[DEBUG] event: disconnected", eresult, msg);
-		});
+		// this.#steam.on("disconnected", (eresult, msg) => {
+		// 	console.log("[DEBUG] event: disconnected", eresult, msg);
+		// });
 
-		this.#steam.on("error", (err) => {
-			if (this.#pauseErrors) {
-				return;
-			}
+        this.#steam.on("error", (err: any) => {
+            if (this.#pauseErrors) {
+                return;
+            }
 
-			this.#log(`Error: ${err.message}`);
+            if (err.eresult !== Steam.EResult.NoConnection) {
+                this.#log(`Error: ${err.message}`);
+            }
 
-			this.#handleError(err);
-		});
+            this.#handleError(err);
+        });
 
 		this.#steam.on("playingState", (blocked, playingApp) => {
 			this.#blocked = blocked;
@@ -172,7 +175,7 @@ export class Bot {
 
 		// Log final uptime before shutting down
 		if (this.#startTime) {
-			this.#log(`Stopped playing. Final Uptime: ${this.#getUptime()}`);
+			this.#log(`Stopped playing.\n[${this.#username}] Final Uptime: ${this.#getUptime()}`);
 			this.#startTime = null;
 		}
 
@@ -234,7 +237,7 @@ export class Bot {
 		this.#log(`Games: ${gameNames}`);
 		this.#log(`Started at: ${this.#startTime.toLocaleString()}`);
 
-        console.log();
+        // console.log();
 
 		// Clear any existing interval (just in case)
 		if (this.#uptimeInterval) clearInterval(this.#uptimeInterval);
@@ -295,24 +298,28 @@ export class Bot {
 
 	}
 
-	async #handleError(err: Error & { eresult: Steam.EResult }): Promise<void> {
-		console.error(err);
+    async #handleError(err: Error & { eresult: Steam.EResult }): Promise<void> {
+        if (err.eresult === Steam.EResult.NoConnection) {
+            this.#log("Connection lost! Attempting to reconnect...");
+        } else {
+            console.error(err);
+        }
 
-		try {
-			await this.logout();
+        try {
+            await this.logout();
 
-			await pRetry(() => this.login(), {
-				retries: 10,
-				factor: 2,
-				minTimeout: 10 * 1000,
-			});
+            await pRetry(() => this.login(), {
+                retries: 10,
+                factor: 2,
+                minTimeout: 10 * 1000,
+            });
 
-			this.#log("Re-login successful.");
-		} catch (err) {
-			console.error(err);
+            this.#log("Re-login successful.");
+        } catch (err) {
+            console.error(err);
 
-			this.#log("Could not re-login after multiple attempts, logging off.");
-			this.#steam.logOff();
-		}
-	}
+            this.#log("Could not re-login after multiple attempts, logging off.");
+            this.#steam.logOff();
+        }
+    }
 }
