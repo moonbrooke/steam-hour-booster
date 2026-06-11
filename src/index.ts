@@ -32,12 +32,14 @@ await startMonitorApi(bots);
 
 // Shutdown
 process.on("SIGINT", async () => {
-    console.info("\nShutting down...");
+    process.stdout.write("\r\x1b[K");
     
     for (const bot of bots) {
+        console.info(`[${bot.username}] Shutting down...`);
         await bot.logout();
+        console.info(`[${bot.username}] Logged out successfully.`);
+        console.info(`[${bot.username}] Exiting.`);
     }
     
-    console.info("Logged out successfully. Exiting.");
     process.exit(0);
 });

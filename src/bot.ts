@@ -21,6 +21,10 @@ export class Bot {
     #startTime: Date | null = null;
     #uptimeInterval: ReturnType<typeof setInterval> | null = null;
 
+    get username(): string {
+		return this.#username;
+	}
+
 	constructor(
 		username: string,
 		password: string,
