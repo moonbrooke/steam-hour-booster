@@ -4,8 +4,6 @@ This is a fork with few modifications.
 
 ![GIF Demo](./assets/sb-gif.gif)
 
-<sub>* Added red block to censor my username.</sub>
-
 ## Original README
 
 > Farm your in-game hours on Steam
