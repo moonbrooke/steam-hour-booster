@@ -175,7 +175,7 @@ export class Bot {
 
 		// Log final uptime before shutting down
 		if (this.#startTime) {
-			this.#log(`Stopped playing.\n[${this.#username}] Final Uptime: ${this.#getUptime()}`);
+			this.#log(`Stopped playing.\n[${this.#username}] \x1b[32mFinal Uptime: ${this.#getUptime()}\x1b[0m`);
 			this.#startTime = null;
 		}
 
@@ -234,8 +234,8 @@ export class Bot {
 		const gameNames = configuredGames.map(game => game.name).join(", ");
 	
 		this.#log(`Playing ${this.#games.length} games.`);
-		this.#log(`Games: ${gameNames}`);
-		this.#log(`Started at: ${this.#startTime.toLocaleString()}`);
+		this.#log(`Games: \x1b[34m${gameNames}\x1b[0m`);
+		this.#log(`Started at: \x1b[32m${this.#startTime.toLocaleString()}\x1b[0m`);
 
         // console.log();
 
@@ -244,7 +244,7 @@ export class Bot {
 		
         // Log uptime every second
         this.#uptimeInterval = setInterval(() => {
-            process.stdout.write(`\r\x1b[K[${this.#username}] Current Uptime: ${this.#getUptime()}`);
+            process.stdout.write(`\r\x1b[K[${this.#username}] \x1b[32mCurrent Uptime: ${this.#getUptime()}\x1b[0m`);
         }, 1000);
 	}
 
@@ -300,7 +300,7 @@ export class Bot {
 
     async #handleError(err: Error & { eresult: Steam.EResult }): Promise<void> {
         if (err.eresult === Steam.EResult.NoConnection) {
-            this.#log("Connection lost! Attempting to reconnect...");
+            this.#log("\x1b[31mConnection lost! Attempting to reconnect...\x1b[0m");
         } else {
             console.error(err);
         }
