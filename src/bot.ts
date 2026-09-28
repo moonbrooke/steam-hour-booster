@@ -6,8 +6,8 @@ import type { TokenStorage } from "./token-storage";
 type LoginDetails = Parameters<Steam["logOn"]>[0];
 type GameInfo = { appid: number; name: string };
 
-// To mitigate the following issue: https://github.com/DrWarpMan/steam-hour-booster/issues/9
-const LOGIN_TIMEOUT = 10 * 60 * 1000;
+// Mitigate this issue: https://github.com/DrWarpMan/steam-hour-booster/issues/9
+const LOGIN_TIMEOUT = 60 * 1000;
 
 export class Bot {
 	#username: string;
@@ -42,7 +42,7 @@ export class Bot {
 		this.#steam = new Steam({
 			autoRelogin: false,
 			dataDirectory: convertRelativePath(dataDirectory),
-			protocol: EConnectionProtocol.TCP,
+			protocol: EConnectionProtocol.WebSocket,
 		});
 
 		this.#setup();
@@ -81,12 +81,14 @@ export class Bot {
 		// });
 
         this.#steam.on("error", (err: any) => {
-            if (this.#pauseErrors) {
-                return;
-            }
-
             if (err.eresult !== Steam.EResult.NoConnection) {
                 this.#log(`Error: ${err.message}`);
+            }
+
+            // Errors always logged above, but on login they're only
+            // handled by login() so it doesn't trigger reconnect loop.
+            if (this.#pauseErrors) {
+                return;
             }
 
             this.#handleError(err);
@@ -120,6 +122,13 @@ export class Bot {
 			this.#log("New refresh token received.");
 			this.#tokenStorage?.setToken(this.#username, refreshToken);
 		});
+
+		if (Bun.env["STEAM_DEBUG"]) {
+			this.#steam.on("debug", (...args: unknown[]) => {
+				process.stdout.write("\r\x1b[K");
+				console.info(`[${this.#username}]`, ...args);
+			});
+		}
 	}
 
 	async login(): Promise<void> {
@@ -128,6 +137,7 @@ export class Bot {
 		const details = await this.#createLoginDetails();
 
 		this.#log("Prepared login credentials.");
+		this.#log("Connecting to Steam...");
 
 		const { promise, resolve, reject } = Promise.withResolvers();
 

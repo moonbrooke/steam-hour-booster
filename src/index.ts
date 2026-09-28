@@ -24,7 +24,18 @@ for (const entry of config) {
 		entry.online,
 	);
 
-	await bot.login();
+	try {
+		await bot.login();
+	} catch (err) {
+		// Only keep the first line of steam-users error.
+        // Set STEAM_DEBUG=1 for full protocol trace.
+		const reason =
+			err instanceof Error ? (err.message.split("\n")[0] ?? err.name) : String(err);
+
+		console.error(`[${entry.username}] Login failed: ${reason}`);
+		process.exit(1);
+	}
+
     bots.push(bot);
 }
 
