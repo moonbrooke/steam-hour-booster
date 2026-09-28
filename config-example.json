@@ -2,6 +2,7 @@
     {
         "username": "foo",
         "password": "bar",
-        "games": [730]
+        "games": [730],
+        "online": false
     }
 ]
