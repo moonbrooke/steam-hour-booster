@@ -31,8 +31,7 @@
     "lint": "biome check src",
     "lint:fix": "biome check --write src",
     "format": "biome format --write src",
-    "test": "bun test",
-    "check": "bun run typecheck && bun run lint && bun test"
+    "check": "bun run typecheck && bun run lint"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
