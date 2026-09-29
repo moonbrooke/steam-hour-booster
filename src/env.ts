@@ -1,7 +1,3 @@
-/**
- * Reads a positive integer from the environment, falling back when the value
- * is missing or malformed instead of propagating `NaN` into the app.
- */
 export const readInt = (
 	value: string | undefined,
 	fallback: number,

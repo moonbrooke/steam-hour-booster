@@ -13,9 +13,7 @@ const DEFAULTS = {
 	configPath: "./config.json",
 	tokenStorageDir: "./tokens",
 	steamDataDirectory: "./steam-data",
-	/** Re-assert the playing state this often to survive silent Steam drops. */
 	keepAliveMinutes: 15,
-	/** How often to print an uptime line when stdout is not a terminal. */
 	uptimeLogMinutes: 5,
 } as const;
 
@@ -26,7 +24,6 @@ const steamDataDirectory =
 	Bun.env["STEAM_DATA_DIRECTORY"] ?? DEFAULTS.steamDataDirectory;
 const monitorEnabled = readBool(Bun.env["MONITOR_ENABLED"], true);
 
-/** Interval env vars are expressed in minutes for readability. */
 const minutesToMs = (
 	value: string | undefined,
 	fallbackMinutes: number,
@@ -75,15 +72,11 @@ const main = async (): Promise<void> => {
 			),
 		});
 
-		// Register before awaiting so a mid-startup signal still logs out the
-		// accounts that are already connected.
 		bots.push(bot);
 
 		try {
 			await bot.login();
 		} catch (error) {
-			// Only keep the first line of steam-user's error.
-			// Set STEAM_DEBUG=1 for the full protocol trace.
 			const reason =
 				error instanceof Error
 					? (error.message.split("\n")[0] ?? error.name)
@@ -91,8 +84,6 @@ const main = async (): Promise<void> => {
 
 			log.error(`[${entry.username}] Login failed: ${reason}`);
 
-			// Take the already connected accounts down cleanly instead of
-			// dropping them by exiting mid-session.
 			await shutdown(bots, stats, 1, "login failed");
 		}
 	}

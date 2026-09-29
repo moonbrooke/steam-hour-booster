@@ -11,11 +11,6 @@ const LEVEL_WEIGHT: Record<LogLevel, number> = {
 
 const FALLBACK_LEVEL: LogLevel = "info";
 
-/**
- * Resolves the configured log level.
- * Unknown values fall back to `info` so a typo in `.env` can not silence the
- * application entirely.
- */
 export const resolveLogLevel = (value: string | undefined): LogLevel => {
 	const normalized = value?.trim().toLowerCase();
 
@@ -35,7 +30,6 @@ export const resolveLogLevel = (value: string | undefined): LogLevel => {
 	return FALLBACK_LEVEL;
 };
 
-/** Colors are only used when writing to an interactive terminal. */
 export const detectColorSupport = (): boolean => {
 	if (Bun.env["NO_COLOR"] !== undefined && Bun.env["NO_COLOR"] !== "") {
 		return false;
@@ -67,21 +61,15 @@ const CODES: Record<AnsiColor, number> = {
 	bold: 1,
 };
 
-/** Escape character, built at runtime so no literal control char ends up in source. */
 const ESC = String.fromCharCode(27);
 
 const stripAnsiPattern = new RegExp(`${ESC}\\[[0-9;]*m`, "g");
 
-/** Carriage return + erase-in-line, used to repaint the live counter. */
 const CLEAR_LINE = `\r${ESC}[K`;
 
 export const stripAnsi = (text: string): string =>
 	text.replace(stripAnsiPattern, "");
 
-/**
- * Wraps `text` in an ANSI escape sequence, or returns it untouched when
- * colors are disabled. Kept pure so it can be unit tested without a TTY.
- */
 export const applyColor = (
 	color: AnsiColor,
 	text: string,
@@ -89,25 +77,12 @@ export const applyColor = (
 ): string => (enabled ? `${ESC}[${CODES[color]}m${text}${ESC}[0m` : text);
 
 export interface LoggerOptions {
-	/** Prefix rendered in front of every message, e.g. the account username. */
 	scope?: string;
 	color?: boolean;
-	/** Whether stdout is an interactive terminal. */
 	interactive?: boolean;
 	level?: LogLevel;
 }
 
-/**
- * Minimal TTY-aware logger.
- *
- * Two behaviours differ between an interactive terminal and a log pipe
- * (Docker, CI, systemd):
- *
- * - ANSI colors are only emitted on a TTY, so piped output stays readable.
- * - The "live line" (used for the in-place uptime counter) is only written on
- *   a TTY. In a pipe it is silently dropped instead of appending a new line
- *   every second.
- */
 export class Logger {
 	readonly #scope: string | undefined;
 	readonly #color: boolean;
@@ -123,7 +98,6 @@ export class Logger {
 			LEVEL_WEIGHT[options.level ?? resolveLogLevel(Bun.env["LOG_LEVEL"])];
 	}
 
-	/** True when stdout is an interactive terminal. */
 	get interactive(): boolean {
 		return this.#interactive;
 	}
@@ -132,7 +106,6 @@ export class Logger {
 		return applyColor(color, text, this.#color);
 	}
 
-	/** Returns a logger sharing this logger's settings, scoped to `scope`. */
 	child(scope: string): Logger {
 		return new Logger({
 			scope,
@@ -158,10 +131,6 @@ export class Logger {
 		this.#write("error", message, error);
 	}
 
-	/**
-	 * Renders `message` in place, overwriting the previous live line.
-	 * No-op when not attached to a TTY.
-	 */
 	setLiveLine(message: string | null): void {
 		if (!this.#interactive) {
 			return;
@@ -195,7 +164,6 @@ export class Logger {
 			return;
 		}
 
-		// Never let a regular log line land on top of the live counter.
 		this.#clearLiveLine();
 
 		const detail =

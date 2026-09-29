@@ -15,12 +15,7 @@ export interface GameInfo {
 	name: string;
 }
 
-/**
- * Renders the configured games for display.
- *
- * Falls back to the raw app IDs when no names have been resolved yet, which is
- * the case until the first `getProductInfo` lookup completes.
- */
+// Renders the configured games for display.
 export const formatGameList = (games: GameInfo[], ids: number[]): string =>
 	(games.length > 0 ? games.map((game) => game.name) : ids).join(", ");
 
@@ -29,44 +24,29 @@ export type BotStatus = "Offline" | "Idle" | "Playing" | "Blocked" | "Error";
 export interface BotSummary {
 	username: string;
 	status: BotStatus;
-	/** Human readable session uptime, e.g. `1h 5m 3s`. */
 	uptime: string;
-	/** Session uptime as `HH:MM:SS`, or null when not playing. */
 	uptimeClock: string | null;
-	/** Session uptime in seconds, or null when not playing. */
 	uptimeSeconds: number | null;
-	/** Cumulative play time across all runs, in milliseconds. */
 	totalPlayedMs: number;
-	/** Cumulative play time across all runs, human readable. */
 	totalPlayed: string;
-	/** Number of play sessions completed since the stats file was created. */
 	sessions: number;
 	blocked: boolean;
 	online: boolean;
-	/** Configured games. Empty until the first successful login resolves them. */
 	games: GameInfo[];
-	/** Last connection or protocol error, if any. */
 	lastError: string | null;
 }
 
 // Mitigate this issue: https://github.com/DrWarpMan/steam-hour-booster/issues/9
 const LOGIN_TIMEOUT = 60 * 1000;
 
-/**
- * `logOff()` only emits `disconnected` when the client is still logged in
- * (see steam-user's `_disconnect`). When it is not, the event never fires, so
- * a timeout is required to keep the reconnect loop from hanging forever.
- */
 const LOGOUT_TIMEOUT = 15 * 1000;
 
 const RECONNECT_RETRIES = 10;
 const RECONNECT_MIN_TIMEOUT = 10 * 1000;
 const RECONNECT_MAX_TIMEOUT = 60 * 1000;
 
-/** How often the uptime counter refreshes on an interactive terminal. */
 const LIVE_TICK = 1000;
 
-/** Errors that will never succeed on retry, no matter how long we wait. */
 const FATAL_ERESULTS: ReadonlySet<Steam.EResult> = new Set([
 	Steam.EResult.InvalidPassword,
 	Steam.EResult.AccountLogonDenied,
@@ -81,14 +61,11 @@ export interface BotOptions {
 	username: string;
 	password: string;
 	games: number[];
-	/** Shared parent directory; each account gets its own subdirectory. */
 	dataDirectory: string;
 	tokenStorage: TokenStorage | null;
 	online: boolean;
 	stats: StatsStorage | null;
-	/** Re-assert the playing state this often so Steam cannot silently drop it. */
 	keepAliveMs: number;
-	/** Interval for periodic uptime log lines when stdout is not a terminal. */
 	uptimeLogIntervalMs: number;
 }
 
@@ -109,24 +86,14 @@ export class Bot {
 	#loggedOn = false;
 	#shuttingDown = false;
 	#blocked = false;
-	/** Suppresses the global error handler while `login()` is in flight. */
 	#pauseErrors = false;
-	/** True while the configured games are reported as playing. */
 	#active = false;
-	/** Timestamp of the current play session, set on the Idle -> Playing edge. */
 	#sessionStartedAt: number | null = null;
-	/** Timestamp of the current uninterrupted playing stretch. */
 	#playStartedAt: number | null = null;
-	/** Set once `gamesPlayed` has been issued for this session. */
 	#keepAliveTimer: ReturnType<typeof setInterval> | null = null;
 	#tickTimer: ReturnType<typeof setInterval> | null = null;
 	#reconnect: Promise<void> | null = null;
 	#lastError: string | null = null;
-	/**
-	 * In-flight game name lookup, started as soon as we are logged on. The first
-	 * `playingState` event can arrive before `login()` returns, so anything that
-	 * needs names has to await this rather than assume they are ready.
-	 */
 	#gamesPending: Promise<void> | null = null;
 	#gamesLoaded = false;
 
@@ -158,12 +125,6 @@ export class Bot {
 		this.#setup();
 	}
 
-	/**
-	 * Snapshot of the bot for the monitor API.
-	 *
-	 * Synchronous by design: game names are resolved once per login and cached,
-	 * so serving a request never issues Steam CM traffic of its own.
-	 */
 	getSummary(): BotSummary {
 		const uptimeSeconds =
 			this.#sessionStartedAt === null
@@ -349,10 +310,6 @@ export class Bot {
 		}
 	}
 
-	/**
-	 * Stops the bot. In-flight reconnect attempts are aborted and no new ones
-	 * are started.
-	 */
 	shutdown(reason: string): void {
 		this.#shuttingDown = true;
 		this.#stopHeartbeat();
@@ -360,7 +317,6 @@ export class Bot {
 		this.#abort.abort(new AbortError(reason));
 	}
 
-	/** Logs out and terminates the process exactly once. */
 	async stopAndExit(code: number): Promise<never> {
 		this.shutdown("Shutting down");
 		this.#log.info("Shutting down...");
@@ -419,18 +375,10 @@ export class Bot {
 		callback(code);
 	}
 
-	/**
-	 * Translates a `playingState` event into a play state transition.
-	 *
-	 * Steam emits this event both in response to our own `gamesPlayed` call and
-	 * whenever the remote side changes, so the current state has to be compared
-	 * against the previous one to avoid restarting the uptime counter.
-	 */
 	#handlePlayingState(blocked: boolean, playingApp: number): void {
 		const wasBlocked = this.#blocked;
 		this.#blocked = blocked;
 
-		// Not blocked and already on a game: our games are playing, nothing to do.
 		if (!blocked && playingApp !== 0 && this.#active) {
 			return;
 		}
@@ -456,9 +404,6 @@ export class Bot {
 	}
 
 	#startPlaying(): void {
-		// Steam can report a second idle `playingState` while it is still applying
-		// our `gamesPlayed` call. Re-entering here would restart the deferred
-		// game-list log and re-announce the session.
 		if (this.#shuttingDown || this.#active) {
 			return;
 		}
@@ -494,7 +439,6 @@ export class Bot {
 		this.#startKeepAlive();
 	}
 
-	/** Logs the configured games, using names when they have been resolved. */
 	#logGames(): void {
 		this.#log.info(
 			`Games: ${this.#log.color(
@@ -518,7 +462,6 @@ export class Bot {
 		this.#logGames();
 	}
 
-	/** Stops reporting games without ending the session, used when blocked. */
 	#stopPlaying(): void {
 		if (!this.#active && this.#playStartedAt === null) {
 			return;
@@ -532,7 +475,6 @@ export class Bot {
 		this.#clearKeepAlive();
 	}
 
-	/** Re-issues `gamesPlayed` after a block is lifted, preserving the session. */
 	#resumePlaying(): void {
 		if (this.#shuttingDown || this.#active) {
 			return;
@@ -628,10 +570,6 @@ export class Bot {
 		this.#log.setLiveLine(null);
 	}
 
-	/**
-	 * Accumulates the current playing stretch into the session total and
-	 * persists it to the stats file.
-	 */
 	#bankPlayTime(): void {
 		if (this.#playStartedAt === null) {
 			return;
@@ -642,7 +580,6 @@ export class Bot {
 		this.#stats?.record(this.#username, played);
 	}
 
-	/** Ends the play session, logging the final totals. */
 	#resetPlayState(): void {
 		this.#bankPlayTime();
 		this.#active = false;
@@ -672,13 +609,6 @@ export class Bot {
 		return formatDuration(stats?.totalPlayedMs ?? 0);
 	}
 
-	/**
-	 * Resolves the configured app IDs to human readable names.
-	 *
-	 * Runs once per successful login and caches the result, so the monitor API
-	 * never generates Steam CM traffic of its own. A failure is non-fatal: the
-	 * raw app IDs are reported instead.
-	 */
 	async #resolveGameNames(): Promise<void> {
 		if (this.#games.length === 0 || this.#gamesLoaded) {
 			return;

@@ -2,7 +2,6 @@ import fs from "node:fs/promises";
 import { join } from "node:path";
 import { convertRelativePath, safePathSegment } from "./path";
 
-/** Refresh tokens are credentials: keep them readable by the owner only. */
 const TOKEN_FILE_MODE = 0o600;
 
 export interface TokenStorage {
@@ -23,8 +22,6 @@ export class DefaultTokenStorage implements TokenStorage {
 	}
 
 	#formatPath(key: string): string {
-		// The key is a username from the config; sanitise it so it can only ever
-		// name a file directly inside the storage directory.
 		return join(this.#directory, safePathSegment(key));
 	}
 

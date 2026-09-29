@@ -76,10 +76,6 @@ const text = (body: string, status: number): Response =>
 		},
 	});
 
-/**
- * Per-account status. One failing account must not break the whole payload,
- * so each summary is collected independently.
- */
 const collect = (bots: readonly Bot[]): BotSummary[] =>
 	bots.map((bot) => {
 		try {

@@ -7,13 +7,6 @@ type Outcome = { ok: true } | { ok: false; reason: "error" | "timeout" };
 
 const TIMED_OUT = Symbol("timed-out");
 
-/**
- * Races `promise` against a timer.
- *
- * The result is discriminated rather than sentinel-value based: a `Promise<void>`
- * resolves to `undefined` on success, which would otherwise be indistinguishable
- * from a timeout.
- */
 const withTimeout = async (
 	promise: Promise<unknown>,
 	ms: number,
@@ -39,15 +32,10 @@ const withTimeout = async (
 	}
 };
 
-/** Upper bound on how long a single account may take to log out. */
+// Upper bound on how long a single account may take to log out.
 const PER_BOT_TIMEOUT = 20 * 1000;
 
-/**
- * Logs out every bot, flushes statistics and exits.
- *
- * Safe to call more than once and from multiple signal handlers: only the first
- * call performs the work, later calls await the same shutdown.
- */
+ // Logs out every bot, flushes statistics and exits.
 export const shutdown = (
 	bots: readonly Bot[],
 	stats: StatsStorage | null,
@@ -95,15 +83,8 @@ export const shutdown = (
 	return inFlight;
 };
 
-/** Signals that must trigger a clean shutdown. */
 export const SHUTDOWN_SIGNALS = ["SIGINT", "SIGTERM"] as const;
 
-/**
- * Registers shutdown handlers for every supported signal plus fatal errors.
- *
- * `SIGTERM` matters most: `docker stop` and systemd send it, and without a
- * handler the process dies without logging off of Steam.
- */
 export const registerShutdownHandlers = (
 	bots: readonly Bot[],
 	stats: StatsStorage | null,

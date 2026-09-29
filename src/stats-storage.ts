@@ -2,9 +2,7 @@ import { z } from "zod";
 import { convertRelativePath } from "./path";
 
 const accountStatsSchema = z.object({
-	/** Total milliseconds spent in the "playing" state, across all runs. */
 	totalPlayedMs: z.number().nonnegative().default(0),
-	/** Number of successful sessions (logon -> play) observed so far. */
 	sessions: z.number().int().nonnegative().default(0),
 	lastPlayedAt: z.number().nullable().default(null),
 });
@@ -21,13 +19,6 @@ const EMPTY: AccountStats = {
 
 export const emptyStats = (): AccountStats => ({ ...EMPTY });
 
-/**
- * Persists cumulative play-time statistics per account.
- *
- * Writes are debounced because play state changes can be frequent, and are
- * additionally awaited on {@link flush} during graceful shutdown so nothing
- * is lost on exit.
- */
 export class StatsStorage {
 	readonly #path: string;
 	readonly #data = new Map<string, AccountStats>();
