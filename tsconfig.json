@@ -1,14 +1,14 @@
 {
 	"extends": [
 		"@tsconfig/bun/tsconfig.json",
-        "@tsconfig/strictest/tsconfig.json",
-    ],
+		"@tsconfig/strictest/tsconfig.json"
+	],
 	"compilerOptions": {
 		"lib": ["ESNext"],
-		"composite": true,
 		"downlevelIteration": true,
 		"allowSyntheticDefaultImports": true,
-		"allowJs": true,
 		"types": ["bun", "@total-typescript/ts-reset"],
-	}
+		"noEmit": true
+	},
+	"include": ["src"]
 }

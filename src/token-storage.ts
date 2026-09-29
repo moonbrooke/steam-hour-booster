@@ -1,6 +1,9 @@
-import fs from "node:fs";
+import fs from "node:fs/promises";
 import { join } from "node:path";
-import { convertRelativePath } from "./path";
+import { convertRelativePath, safePathSegment } from "./path";
+
+/** Refresh tokens are credentials: keep them readable by the owner only. */
+const TOKEN_FILE_MODE = 0o600;
 
 export interface TokenStorage {
 	getToken(key: string): Promise<string | null>;
@@ -10,26 +13,30 @@ export interface TokenStorage {
 
 export class DefaultTokenStorage implements TokenStorage {
 	readonly #directory: string;
+	#ready: Promise<void> | null = null;
 
 	constructor(directory: string) {
 		this.#directory = convertRelativePath(directory);
-
-		if (!fs.existsSync(this.#directory)) {
-			fs.mkdirSync(this.#directory);
-		}
+		this.#ready = fs
+			.mkdir(this.#directory, { recursive: true, mode: 0o700 })
+			.then(() => undefined);
 	}
 
 	#formatPath(key: string): string {
-		return join(this.#directory, key);
+		// The key is a username from the config; sanitise it so it can only ever
+		// name a file directly inside the storage directory.
+		return join(this.#directory, safePathSegment(key));
 	}
 
 	async getToken(key: string): Promise<string | null> {
+		await this.#ready;
+
 		const path = this.#formatPath(key);
 
 		try {
-			const token = await Bun.file(path).text();
+			const token = (await Bun.file(path).text()).trim();
 
-			return token;
+			return token === "" ? null : token;
 		} catch (err) {
 			if (!(err instanceof Error)) {
 				throw err;
@@ -48,22 +55,14 @@ export class DefaultTokenStorage implements TokenStorage {
 	}
 
 	async setToken(key: string, token: string): Promise<void> {
-		const path = this.#formatPath(key);
+		await this.#ready;
 
-		await Bun.write(path, token);
+		await Bun.write(this.#formatPath(key), token, { mode: TOKEN_FILE_MODE });
 	}
 
 	async deleteToken(key: string): Promise<void> {
-		const path = this.#formatPath(key);
+		await this.#ready;
 
-		return new Promise((resolve, reject) => {
-			fs.unlink(path, (err) => {
-				if (err) {
-					reject(err);
-				} else {
-					resolve();
-				}
-			});
-		});
+		await fs.unlink(this.#formatPath(key));
 	}
 }
