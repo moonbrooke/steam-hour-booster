@@ -2,7 +2,11 @@
 
 This is a fork with few modifications.
 
-![GIF Demo](./assets/sb-gif.gif)
+![GIF Demo](./assets/shb2.gif)
+
+Includes simple web dashboard:
+
+![GIF Demo](./assets/web-dash2.png)
 
 ## Original README
 
