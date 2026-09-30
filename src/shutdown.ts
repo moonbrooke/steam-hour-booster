@@ -47,7 +47,7 @@ export const shutdown = (
 	}
 
 	inFlight = (async (): Promise<never> => {
-		console.info(`\nShutting down (${reason})...`);
+		console.info(`\n💀 Shutting down (${reason})...`);
 
 		for (const bot of bots) {
 			bot.shutdown(reason);

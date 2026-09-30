@@ -30,7 +30,7 @@ const minutesToMs = (
 ): number => readInt(value, fallbackMinutes) * 60_000;
 
 const main = async (): Promise<void> => {
-	log.info("Starting Steam Hour Booster");
+	log.info("✅ Starting Steam Hour Booster");
 
 	const config = await loadConfig(configPath);
 
@@ -88,7 +88,7 @@ const main = async (): Promise<void> => {
 		}
 	}
 
-	log.info(`Ready. ${bots.length} account(s) connected.`);
+	log.info(`🚀 Ready. ${bots.length} account(s) connected.`);
 };
 
 try {
